@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
-# <copyright file="notification.py" owner="Brocade">
-# Copyright (c) 2015 All Right Reserved
+# <copyright file="notification.py" owner="Tim Epkes">
+# Copyright (c) 2018 All Right Reserved
 #
 # Please see the LICENSE.txt file for more information.
 # All other rights reserved.
@@ -12,9 +12,9 @@
 # PARTICULAR PURPOSE.
 #
 # </copyright>
-# <author>Tim Epkes and Becca Nitzan</author>
-# <email>tepkes@brocade.com or bnitzan@brocade.com</email>
-# <date>2015-09-03</date>
+# <author>Tim Epkes</author>
+# <email>tim.epkes@gmail.com</email>
+# <date>2018-08-01</date>
 # <summary>Contains code for the system profiler</summary>
 ################################################################################
 
