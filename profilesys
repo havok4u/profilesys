@@ -1,0 +1,82 @@
+#!/bin/bash
+################################################################################
+# <copyright file="notification.py" owner="Brocade">
+# Copyright (c) 2015 All Right Reserved
+#
+# Please see the LICENSE.txt file for more information.
+# All other rights reserved.
+#
+# THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY 
+# KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
+# PARTICULAR PURPOSE.
+#
+# </copyright>
+# <author>Tim Epkes and Becca Nitzan</author>
+# <email>tepkes@brocade.com or bnitzan@brocade.com</email>
+# <date>2015-09-03</date>
+# <summary>Contains code for the system profiler</summary>
+################################################################################
+
+
+declare -A record
+
+fields=5
+
+classifier=""
+for i in `ls /sys/class/net`
+do
+if [ -d /sys/class/net/$i/device ]
+then
+  classifier=$i"|"$classifier
+fi  
+done
+
+# Get physical network interface
+counter=1
+#for i in `virsh nodedev-list  | egrep ${classifier::-1}`
+for i in `virsh nodedev-list  | egrep ${classifier%?}`
+do  
+  # Get interface Name and pci
+  ARRAY=`virsh nodedev-dumpxml $i | egrep "parent|interface" | sed -e 's/<[^>]*>//g'`
+  array=(${ARRAY// / })
+  record[$counter,pci]=`echo ${array[0]} | awk -F '_' '{print $3"_"$4"_"$5}'`
+  record[$counter,pname]=${array[1]}
+  # Get physical slot mapping
+  pci=`echo ${record[$counter,pci]} | sed -e 's/_/:/' | sed -e 's/_/./'`
+  pslot=`lspci -v -s $pci | grep Physical | awk '{print $3}'`
+  if [ -z $pslot ]
+  then
+    record[$counter,pslot]="na"
+  else
+    record[$counter,pslot]=$pslot
+  fi
+  # Get numa mapping
+  record[$counter,numa]=`cat /sys/class/net/${record[$counter,pname]}/device/numa_node`
+  # Get driver
+  record[$counter,driver]=`lspci -v -s $pci | grep driver | awk '{print $5}'`
+  ((counter++))
+done
+
+
+
+# output CPU information
+echo
+printf "CPU information\n"
+printf '=%.0s' {1..37}
+printf "\n"
+lscpu | egrep "Architecture|Byte Order|CPU\(s\)|Thread|CPU|Virtualization|L2 cache"
+echo
+
+
+# output NIC Slot information
+printf "Network Card Slot Information\n"
+printf "%-10s %-10s %-10s %-5s %-10s\n" "PCI" "IntName" "PhysSlot" "Numa" "Driver"
+printf '=%.0s' {1..47}
+printf "\n"
+END=$((${#record[@]}/fields))
+for i in $(seq 1 $END)
+do
+  printf "%-10s %-10s %-10s %-5s %-10s\n" ${record[$i,pci]} ${record[$i,pname]} ${record[$i,pslot]} ${record[$i,numa]} ${record[$i,driver]}
+done
+
